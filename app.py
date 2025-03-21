@@ -335,7 +335,7 @@ if data is not None:
         data_sorted['time_bin'] = pd.cut(data_sorted['time_index'], bins=bins)
         
         # Calculate aggregates
-        time_agg = data_sorted.groupby(['time_bin', 'label']).size().unstack().fillna(0)
+        time_agg = data_sorted.groupby(['time_bin', 'label'], observed=True).size().unstack().fillna(0)
         time_agg.index = [i for i in range(len(time_agg))]
         
         # Create stacked area chart

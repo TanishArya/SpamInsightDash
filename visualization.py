@@ -347,7 +347,7 @@ def plot_sunburst_chart(df):
     df['length_category'] = pd.cut(df['message_length'], bins=bins, labels=labels)
     
     # Aggregate data
-    sunburst_data = df.groupby(['label', 'length_category']).size().reset_index(name='count')
+    sunburst_data = df.groupby(['label', 'length_category'], observed=True).size().reset_index(name='count')
     
     # Create sunburst chart
     fig = px.sunburst(
