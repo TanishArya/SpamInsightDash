@@ -4,6 +4,7 @@ import base64
 from io import StringIO
 import os
 import time
+import plotly.express as px
 
 from util import load_sample_data, preprocess_data, get_summary_stats
 from text_analysis import extract_word_frequencies, get_message_length_stats, analyze_common_words
@@ -78,20 +79,6 @@ with st.sidebar:
         disabled=(data_source == "Upload your own data" and uploaded_file is None),
         help="Adjust to filter messages by character length"
     )
-    
-    # Add more filter options
-    if data_source != "Upload your own data" or uploaded_file is not None:
-        st.markdown("### Additional Filters")
-        
-        filter_col1, filter_col2 = st.columns(2)
-        
-        with filter_col1:
-            show_spam = st.checkbox("Show Spam", value=True, 
-                               help="Toggle to show/hide spam messages")
-        
-        with filter_col2:
-            show_non_spam = st.checkbox("Show Non-Spam", value=True,
-                                   help="Toggle to show/hide non-spam messages")
     
     # Export options
     st.markdown("---")
