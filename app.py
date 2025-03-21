@@ -13,7 +13,12 @@ from visualization import (
     plot_message_length_comparison,
     plot_character_count_distribution,
     plot_word_clouds,
-    plot_confusion_matrix
+    plot_confusion_matrix,
+    plot_word_length_distribution,
+    plot_treemap_word_frequency,
+    plot_radar_chart,
+    plot_sunburst_chart,
+    plot_message_heatmap
 )
 
 # Page configuration
@@ -33,13 +38,18 @@ Upload your spam detection dataset (CSV format) or use our sample data to get st
 
 # Sidebar
 with st.sidebar:
-    st.header("Controls")
+    st.image("https://img.icons8.com/fluency/96/spam-message.png", width=80)
+    st.header("Spam Detection Dashboard")
+    st.markdown("---")
+    
+    st.subheader("📊 Controls")
     
     # Data source selection
     data_source = st.radio(
         "Select Data Source",
         ["Upload your own data", "Use sample data"],
-        index=1
+        index=1,
+        help="Choose to use the built-in sample dataset or upload your own CSV file"
     )
     
     uploaded_file = None
@@ -56,7 +66,8 @@ with st.sidebar:
             st.warning("Please upload a CSV file or select 'Use sample data'")
     
     # Filter options
-    st.subheader("Filters")
+    st.markdown("---")
+    st.subheader("🔍 Filters")
     
     # These will be populated once we have data
     message_length_filter = st.slider(
@@ -64,18 +75,67 @@ with st.sidebar:
         min_value=0,
         max_value=500,
         value=(0, 500),
-        disabled=(data_source == "Upload your own data" and uploaded_file is None)
+        disabled=(data_source == "Upload your own data" and uploaded_file is None),
+        help="Adjust to filter messages by character length"
     )
     
-    st.markdown("---")
+    # Add more filter options
+    if data_source != "Upload your own data" or uploaded_file is not None:
+        st.markdown("### Additional Filters")
+        
+        filter_col1, filter_col2 = st.columns(2)
+        
+        with filter_col1:
+            show_spam = st.checkbox("Show Spam", value=True, 
+                               help="Toggle to show/hide spam messages")
+        
+        with filter_col2:
+            show_non_spam = st.checkbox("Show Non-Spam", value=True,
+                                   help="Toggle to show/hide non-spam messages")
     
     # Export options
-    st.subheader("Export Options")
+    st.markdown("---")
+    st.subheader("💾 Export Options")
+    
     export_format = st.selectbox(
         "Select Export Format",
         ["CSV", "Excel"],
-        disabled=(data_source == "Upload your own data" and uploaded_file is None)
+        disabled=(data_source == "Upload your own data" and uploaded_file is None),
+        help="Choose format for exporting data"
     )
+    
+    # Add dashboard info
+    st.markdown("---")
+    st.subheader("ℹ️ Dashboard Info")
+    
+    with st.expander("About This Dashboard"):
+        st.markdown("""
+        This dashboard analyzes spam detection patterns using multiple visualization techniques:
+        
+        - **Classification Analysis**: Distribution of spam vs. non-spam messages
+        - **Content Analysis**: Word clouds and common word analysis
+        - **Word Frequency**: Comparison of word usage in different message types
+        - **Length Analysis**: Message size metrics and comparisons
+        - **Advanced Visualizations**: Complex charts for deeper insights
+        - **Comparison Charts**: Direct side-by-side analysis of spam characteristics
+        
+        Dashboard created using Streamlit and Python data visualization libraries.
+        """)
+        
+    with st.expander("How to Use"):
+        st.markdown("""
+        1. **Select Data Source**: Use sample data or upload your own CSV
+        2. **Apply Filters**: Refine the analysis by message length
+        3. **Explore Tabs**: Navigate through different visualization categories
+        4. **Export Data**: Download analyzed data in your preferred format
+        
+        Hover over charts for interactive tooltips. Click and drag to zoom in on specific areas.
+        """)
+        
+    # Add footer to sidebar
+    st.markdown("---")
+    st.caption("Spam Detection Dashboard v1.0")
+    st.caption("© 2025 | Powered by Streamlit")
 
 # Load data
 data = None
@@ -131,7 +191,14 @@ if data is not None:
     # Metrics tabs
     st.markdown("---")
     
-    tabs = st.tabs(["Classification Metrics", "Content Analysis", "Word Frequency", "Length Analysis"])
+    tabs = st.tabs([
+        "Classification Metrics", 
+        "Content Analysis", 
+        "Word Frequency", 
+        "Length Analysis", 
+        "Advanced Visualizations",
+        "Comparison Charts"
+    ])
     
     with tabs[0]:
         st.subheader("Spam vs. Non-Spam Distribution")
@@ -168,9 +235,21 @@ if data is not None:
             st.table(common_words_analysis['non_spam_words'])
     
     with tabs[2]:
-        st.subheader("Word Frequency Distribution")
+        st.subheader("Word Frequency Analysis")
+        
         word_frequencies = extract_word_frequencies(data)
+        
+        # Word frequency chart
         st.plotly_chart(plot_word_frequency(word_frequencies), use_container_width=True)
+        
+        # Word count distribution
+        st.subheader("Word Count Distribution")
+        st.plotly_chart(plot_word_length_distribution(data), use_container_width=True)
+        
+        # Add treemap visualization
+        st.subheader("Word Frequency Treemap")
+        st.caption("Hierarchical view of word frequencies by message category")
+        st.plotly_chart(plot_treemap_word_frequency(word_frequencies), use_container_width=True)
     
     with tabs[3]:
         st.subheader("Message Length Analysis")
@@ -184,6 +263,108 @@ if data is not None:
         with col2:
             st.subheader("Character Count Distribution")
             st.plotly_chart(plot_character_count_distribution(data), use_container_width=True)
+            
+        # Add sunburst chart for message length distribution
+        st.subheader("Message Length Sunburst Chart")
+        st.caption("Hierarchical view of message distribution by category and length")
+        st.plotly_chart(plot_sunburst_chart(data), use_container_width=True)
+    
+    with tabs[4]:
+        st.header("Advanced Visualizations")
+        st.markdown("""
+        These visualizations provide deeper insights into the characteristics of spam and non-spam messages.
+        """)
+        
+        # Message heatmap
+        st.subheader("Message Length Heatmap")
+        st.caption("Average message length across different time periods")
+        st.plotly_chart(plot_message_heatmap(data), use_container_width=True)
+        
+        # Add feature distributions
+        st.subheader("Spam Detection Features")
+        st.caption("Distribution of key features used in spam detection")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Word count vs message length scatter plot
+            fig = px.scatter(
+                data, 
+                x='message_length', 
+                y='word_count',
+                color='label',
+                color_discrete_map={'Spam': '#D83B01', 'Not Spam': '#107C41'},
+                opacity=0.7,
+                title='Word Count vs. Message Length',
+                labels={'message_length': 'Message Length (characters)', 'word_count': 'Word Count'},
+                hover_data=['message']
+            )
+            
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Special characters count
+            data['special_chars'] = data['message'].apply(lambda x: sum(c in '!@#$%^&*()' for c in x))
+            
+            fig = px.histogram(
+                data,
+                x='special_chars',
+                color='label',
+                color_discrete_map={'Spam': '#D83B01', 'Not Spam': '#107C41'},
+                opacity=0.7,
+                nbins=20,
+                title='Special Characters Distribution'
+            )
+            
+            fig.update_layout(
+                xaxis_title='Number of Special Characters',
+                yaxis_title='Count',
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+    
+    with tabs[5]:
+        st.header("Spam vs. Non-Spam Comparisons")
+        st.markdown("""
+        Direct comparisons between spam and non-spam messages across multiple dimensions.
+        """)
+        
+        # Add radar chart
+        st.subheader("Message Characteristics Comparison")
+        st.caption("Radar chart comparing key metrics between spam and non-spam messages")
+        st.plotly_chart(plot_radar_chart(data), use_container_width=True)
+        
+        # Add stacked area chart
+        st.subheader("Message Length Distribution Over Time")
+        
+        # Create a proxy for time
+        data_sorted = data.sort_values('message_length').reset_index(drop=True)
+        data_sorted['time_index'] = data_sorted.index
+        
+        # Group by time bins and label
+        bins = 20
+        data_sorted['time_bin'] = pd.cut(data_sorted['time_index'], bins=bins)
+        
+        # Calculate aggregates
+        time_agg = data_sorted.groupby(['time_bin', 'label']).size().unstack().fillna(0)
+        time_agg.index = [i for i in range(len(time_agg))]
+        
+        # Create stacked area chart
+        fig = px.area(
+            time_agg, 
+            color_discrete_map={'Spam': '#D83B01', 'Not Spam': '#107C41'},
+            title='Message Distribution Over Time'
+        )
+        
+        fig.update_layout(
+            xaxis_title='Time Period',
+            yaxis_title='Number of Messages',
+            height=400
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
     
     
     # Export section
